@@ -6,11 +6,14 @@ import shutil
 import ROOT
 import argparse
 
+ROOT.gInterpreter.Declare('#include "rqlib/rqlibProjectHeaders.h"')
+ROOT.gSystem.Load("rqlib/rqlib.so")
+
 #______________________________________
 def load_chain(fileList, chain):
-    
+
     print 'Loading file names from '+fileList+' into '+chain.GetName()
-    
+
     file = open(fileList, 'r')
     rqFiles = file.read().splitlines()
     for line in rqFiles:
@@ -43,16 +46,16 @@ useGui = args.useGui
 # decide whether or not to show gui
 if useProof and not useGui:
     ROOT.gROOT.SetBatch(True)
-    
+
 #______________________________________
 # build the Events and RQMCTruth TChains and friend them
 chain = ROOT.TChain('Events')
 load_chain(fileList, chain)
 
-mcTruth = ROOT.TChain('RQMCTruth')
-load_chain(fileList, mcTruth)
+#mcTruth = ROOT.TChain('RQMCTruth')
+#load_chain(fileList, mcTruth)
 
-chain.AddFriend(mcTruth)
+#chain.AddFriend(mcTruth)
 
 if nevents == -1:
     nevents = ROOT.TTree.kMaxEntries
@@ -72,7 +75,7 @@ print 'Saving outputs to '+outFile
 if (args.useProof):
 
     proof = ROOT.TProof.Open('','workers='+str(nworkers))
-    # Load 
+    # Load
     # For ROOT < 6.08.02, PROOF is not loading in the pcm files correctly, so load them manually.
     # See https://sft.its.cern.ch/jira/browse/ROOT-8456
     # and https://sft.its.cern.ch/jira/browse/ROOT-8466
