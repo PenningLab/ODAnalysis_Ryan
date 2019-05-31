@@ -1,0 +1,6 @@
+*.png
+output
+rqlib
+*.d
+*.so
+*.pcm

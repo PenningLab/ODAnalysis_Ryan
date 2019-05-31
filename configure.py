@@ -28,9 +28,10 @@ elif args.force:
 else:
     print "rqlib already exists. doing nothing."
 if args.tree:
-	ROOT.gInterpreter.Declare('#include "rqlib/rqlibProjectHeaders.h"')
+	print "Creating tree analysis class template."
+	#ROOT.gInterpreter.Declare('#include "rqlib/rqlibProjectHeaders.h"')
 	ROOT.gSystem.Load("rqlib/rqlib.so")
-	
+
 	classname = "Analysis"
 	if args.AnaName:
 		classname = args.AnaName
