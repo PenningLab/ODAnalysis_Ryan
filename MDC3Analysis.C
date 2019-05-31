@@ -62,40 +62,40 @@ void MDC3Analysis::SlaveBegin(TTree* /*tree*/)
 
 	TString option = GetOption();
 
-	h_area = CreateSumw2Hist("h_area", "Pulse Area (phd)", "", 1000, 0, 1000);
+	h_area = CreateSumw2Hist("h_area", "Pulse Area (phd)", "", 1000, 0, maxarea);
 	h_coincidence = CreateSumw2Hist("h_coincidence", "Pulse Coincidence", "", 121, 0, 121);
-	h_peakamp = CreateSumw2Hist("h_peakamp", "Pulse Peak Amplitude (phd/ns)", "", 250, 0, 15);
-	h_phdperpulse = CreateSumw2Hist("h_phdperpulse", "Event Area/Pulse (phd)", "", 1000, 0, 400);
-	h_phdCurrent
-	    = Create2DHist("h_phdCurrent", "Pulse Start Time (ns)", "Event Area (phd)", 5000, 0, 350000, 500, 0, 2000);
+	h_peakamp = CreateSumw2Hist("h_peakamp", "Pulse Peak Amplitude (phd/ns)", "", 250, 0, maxamp);
+	// h_phdperpulse = CreateSumw2Hist("h_phdperpulse", "Event Area/Pulse (phd)", "", 1000, 0, 400);
+	h_phdCurrent = Create2DHist(
+	    "h_phdCurrent", "Pulse Start Time (ns)", "Event Area (phd)", 5000, 0, maxstart, 1000, 0, maxarea);
 	for (int i = 0; i < histnames.size(); i++)
 	{
 		h_timing[i] = CreateSumw2Hist("h_" + histnames[i], histnames[i] + histunits[i], "",
 		    std::min(500.0, (histxlimsu[i] - histxlimsl[i]) / histprecision[i]), histxlimsl[i], histxlimsu[i]);
 		h_timingVarea[i] = Create2DHist("h_" + histnames[i] + "Varea", histnames[i] + histunits[i], "Area (phd)",
-		    std::min(500.0, (histxlimsu[i] - histxlimsl[i]) / histprecision[i]), histxlimsl[i], histxlimsu[i], 500, 0,
-		    1200);
+		    std::min(500.0, (histxlimsu[i] - histxlimsl[i]) / histprecision[i]), histxlimsl[i], histxlimsu[i], 1000, 0,
+		    maxarea);
 		h_timingVcoincidence[i] = Create2DHist("h_" + histnames[i] + "Vcoincidence", histnames[i] + histunits[i],
 		    "Coincidence", std::min(500.0, (histxlimsu[i] - histxlimsl[i]) / histprecision[i]), histxlimsl[i],
 		    histxlimsu[i], 121, 0, 121);
-		h_timingVphdperpmt[i] = Create2DHist("h_" + histnames[i] + "Vphdperpmt", histnames[i] + histunits[i],
+		/*h_timingVphdperpmt[i] = Create2DHist("h_" + histnames[i] + "Vphdperpmt", histnames[i] + histunits[i],
 		    "Area/Coincidence (phd/PMT)", std::min(500.0, (histxlimsu[i] - histxlimsl[i]) / histprecision[i]),
-		    histxlimsl[i], histxlimsu[i], 1000, 0, 75);
+		    histxlimsl[i], histxlimsu[i], 1000, 0, 75);*/
 		h_timingVpeakamp[i] = Create2DHist("h_" + histnames[i] + "Vpeakamp", histnames[i] + histunits[i],
 		    "Peak Amplitude (phd/ns)", std::min(500.0, (histxlimsu[i] - histxlimsl[i]) / histprecision[i]),
-		    histxlimsl[i], histxlimsu[i], 250, 0, 25);
+		    histxlimsl[i], histxlimsu[i], 500, 0, maxamp);
 
 		fOutput->Add(h_timing[i]);
 		// cout << "Added " << h_timing[i]->GetName() << " to output list" << endl;
 		fOutput->Add(h_timingVarea[i]);
 		fOutput->Add(h_timingVcoincidence[i]);
-		fOutput->Add(h_timingVphdperpmt[i]);
+		// fOutput->Add(h_timingVphdperpmt[i]);
 		fOutput->Add(h_timingVpeakamp[i]);
 	}
 	fOutput->Add(h_area);
 	fOutput->Add(h_coincidence);
 	fOutput->Add(h_peakamp);
-	fOutput->Add(h_phdperpulse);
+	// fOutput->Add(h_phdperpulse);
 	fOutput->Add(h_phdCurrent);
 	// fOutput->Add(eventareas);
 }
@@ -126,7 +126,7 @@ Bool_t MDC3Analysis::Process(Long64_t entry)
 	{
 		eventareas += pulsesODLG_->pulseArea_phd[i];
 	}
-	if (eventareas > 10)
+	if (eventareas > 1 && pulsesODLG_->maxCoincidence > 0)
 	{
 		h_phdperpulse->Fill(eventareas);
 		for (int i = 0; i < pulsesODLG_->nPulses; i++)
@@ -209,6 +209,7 @@ Bool_t MDC3Analysis::Process(Long64_t entry)
 			// h_timingVcoincidence[12]->Fill(
 			//    pasym, pulsesODLG_->coincidence[i], pulsesODLG_->pulseArea_phd[i] / eventareas);
 
+			/*
 			h_timingVphdperpmt[0]->Fill(pulsesODLG_->areaFractionTime1_ns[i],
 			    pulsesODLG_->pulseArea_phd[i] / pulsesODLG_->coincidence[i],
 			    pulsesODLG_->pulseArea_phd[i] / eventareas);
@@ -247,6 +248,7 @@ Bool_t MDC3Analysis::Process(Long64_t entry)
 			    pulsesODLG_->pulseArea_phd[i] / eventareas);
 			// h_timingVphdperpmt[12]->Fill(pasym, pulsesODLG_->pulseArea_phd[i] / pulsesODLG_->coincidence[i],
 			//  pulsesODLG_->pulseArea_phd[i] / eventareas);
+			*/
 
 			h_timingVpeakamp[0]->Fill(pulsesODLG_->areaFractionTime1_ns[i], pulsesODLG_->peakAmp[i],
 			    pulsesODLG_->pulseArea_phd[i] / eventareas);
@@ -314,10 +316,12 @@ void MDC3Analysis::Terminate()
 		h_timingVcoincidence[i]->Scale(1.0 / h_timingVcoincidence[i]->Integral());
 		h_timingVcoincidence[i]->Write();
 
+		/*
 		hname = "h_" + histnames[i] + "Vphdperpmt";
 		h_timingVphdperpmt[i] = dynamic_cast<TH2F*>(fOutput->FindObject(hname.c_str()));
 		h_timingVphdperpmt[i]->Scale(1.0 / h_timingVphdperpmt[i]->Integral());
 		h_timingVphdperpmt[i]->Write();
+		*/
 
 		hname = "h_" + histnames[i] + "Vpeakamp";
 		h_timingVpeakamp[i] = dynamic_cast<TH2F*>(fOutput->FindObject(hname.c_str()));
@@ -337,9 +341,11 @@ void MDC3Analysis::Terminate()
 	h_coincidence->Scale(1.0 / h_coincidence->Integral());
 	h_coincidence->Write();
 
+	/*
 	h_phdperpulse = dynamic_cast<TH1F*>(fOutput->FindObject("h_phdperpulse"));
 	h_phdperpulse->Scale(1.0 / h_phdperpulse->Integral());
 	h_phdperpulse->Write();
+	*/
 
 	h_phdCurrent = dynamic_cast<TH2F*>(fOutput->FindObject("h_phdCurrent"));
 	h_phdCurrent->Scale(1.0 / h_phdCurrent->Integral());

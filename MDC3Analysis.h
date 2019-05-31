@@ -46,13 +46,15 @@ public:
 	TString fOutFileName;
 
 	// Output histograms (OD only for now)
-	std::vector<std::string> histnames { "aft1", "aft5", "aft10", "aft25", "aft50", "aft75", "aft90", "aft95", "aft99",
-		"peakTime", "rmsWidth", "promptFrac50" };
+	std::vector<std::string> histnames { "areaFractionTime1_ns", "areaFractionTime5_ns", "areaFractionTime10_ns",
+		"areaFractionTime25_ns", "areaFractionTime50_ns", "areaFractionTime75_ns", "areaFractionTime90_ns",
+		"areaFractionTime95_ns", "areaFractionTime99_ns", "peakTime_ns", "rmsWidth_ns", "promptFraction50ns" };
 	std::vector<std::string> histunits { "(ns)", "(ns)", "(ns)", "(ns)", "(ns)", "(ns)", "(ns)", "(ns)", "(ns)", "(ns)",
 		"(ns)", "" };
 	std::vector<double> histprecision { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 1, 0.01, 0.01 };
 	std::vector<double> histxlimsu { 800, 800, 800, 800, 1000, 1000, 1200, 1400, 2200, 1000, 2000, 1.1, 1 };
 	std::vector<double> histxlimsl { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1 };
+	double maxarea, maxamp, maxstart;
 	/*
 	    struct outHists
 	    {
@@ -82,13 +84,13 @@ public:
 	    = std::vector<TH1F*>(12); // aft1, aft5, aft10, aft25, aft50, aft75, aft90, aft95, aft99, peakTime, rmsWidth
 	std::vector<TH2F*> h_timingVarea = std::vector<TH2F*>(12);
 	std::vector<TH2F*> h_timingVcoincidence = std::vector<TH2F*>(12);
-	std::vector<TH2F*> h_timingVphdperpmt = std::vector<TH2F*>(12);
+	// std::vector<TH2F*> h_timingVphdperpmt = std::vector<TH2F*>(12);
 	std::vector<TH2F*> h_timingVpeakamp = std::vector<TH2F*>(12);
 	TH2F* h_phdCurrent = 0;
 	TH1F* h_area = 0;
 	TH1F* h_coincidence = 0;
 	TH1F* h_peakamp = 0;
-	TH1F* h_phdperpulse = 0;
+	// TH1F* h_phdperpulse = 0;
 
 	// TH2F* h_ass = 0;
 
@@ -168,6 +170,13 @@ void MDC3Analysis::Init(TTree* tree)
 		return;
 	fChain = tree;
 	fReader.SetTree(tree);
+	maxamp = fChain->GetMaximum("pulsesODLG.peakAmp");
+	maxarea = fChain->GetMaximum("pulsesODLG.pulseArea_phd");
+	maxstart = fChain->GetMaximum("pulsesODLG.pulseStartTime_ns");
+	for (int ij = 0; ij < histnames.size(); ij++)
+	{
+		histxlimsu[ij] = fChain->GetMaximum(histnames[ij].c_str());
+	}
 }
 
 Bool_t MDC3Analysis::Notify()
