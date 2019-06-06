@@ -22,7 +22,7 @@ def load_chain(fileList, chain):
 		else:
 			chain.Add(line)
 
-def load_many(fileList,chain):
+def load_many(fileList,chain,chain_name):
 	with open(fileList) as f:
 		rqFiles=f.read().splitlines()
 		for line in rqFiles:
@@ -32,11 +32,12 @@ def load_many(fileList,chain):
 				segs = line.split('|')
 				if len(segs)<2:
 					continue;
-				if not (segs[1] in chain):
-					chain[segs[1]] = ROOT.TChain('Events')
+				if not (segs[1] in chain_name):
+					chain.append(ROOT.TChain('Events'))
+					chain_name.append(segs[1])
 				for ifile in segs[0].split(','):
-					chain[segs[1]].Add(ifile)
-	print(chain.keys())
+					chain[-1].Add(ifile)
+	print(chain_name)
 #______________________________________
 # define script options
 parser = argparse.ArgumentParser(description='Wrapper for TSelector-based analysis on LZ RQ files',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -98,16 +99,16 @@ if not args.ff:
 	else:
 		chain.Process(selector, '', nevents)
 else:
-	chains = {}
-	load_many(fileList,chains)
-	for irun in chains:
-		outname = irun+'.root'
+	chains = []
+	chain_names = []
+	load_many(fileList,chains,chain_names)
+	for irun in range(len(chains)):
+		outname = chain_names[irun]+'.root'
 		selector=ROOT.TSelector.GetSelector(macro+'+')
 		selector.SetOutputName(outname)
 		print 'Saving outputs to '+outname
-
+		#selector.SetHistRanges(chains[irun])
 		if (args.useProof):
-
 			proof = ROOT.TProof.Open('','workers='+str(nworkers))
 			# Load
 			# For ROOT < 6.08.02, PROOF is not loading in the pcm files correctly, so load them manually.

@@ -38,8 +38,8 @@ if args.tree:
 	selectoptions = "@"
 	if args.options:
 		selectoptions = args.options
-	file = ROOT.TFile(filename)
-	newtree = file.Get(args.tree)
+	ifile = ROOT.TFile(filename)
+	newtree = ifile.Get(args.tree)
 	newtree.MakeSelector(classname,selectoptions)
 	file.Close()
 

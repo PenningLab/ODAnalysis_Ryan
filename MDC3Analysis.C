@@ -38,7 +38,7 @@
 #include <memory>
 #include <vector>
 
-using namespace std;
+//using namespace std;
 
 TH1F* CreateSumw2Hist(string hname, string Xname, string Yname, double Xbins, double Xbin_min, double Xbin_max);
 TH1F* Create1DHist(string h1name, string Xname, string Yname, double Xbins, double Xbin_min, double Xbin_max);
@@ -59,8 +59,9 @@ void MDC3Analysis::SlaveBegin(TTree* /*tree*/)
 	// The SlaveBegin() function is called after the Begin() function.
 	// When running with PROOF SlaveBegin() is called on each slave server.
 	// The tree argument is deprecated (on PROOF 0 is passed).
-
+	
 	TString option = GetOption();
+	std::cout<<"Begining run"<<std::endl;
 
 	h_area = CreateSumw2Hist("h_area", "Pulse Area (phd)", "", 1000, 0, maxarea);
 	h_coincidence = CreateSumw2Hist("h_coincidence", "Pulse Coincidence", "", 121, 0, 121);
@@ -98,6 +99,7 @@ void MDC3Analysis::SlaveBegin(TTree* /*tree*/)
 	// fOutput->Add(h_phdperpulse);
 	fOutput->Add(h_phdCurrent);
 	// fOutput->Add(eventareas);
+	fNumberOfEvents=0;
 }
 
 Bool_t MDC3Analysis::Process(Long64_t entry)
@@ -118,8 +120,10 @@ Bool_t MDC3Analysis::Process(Long64_t entry)
 	//
 	// The return value is currently not used.
 
-	fReader.SetEntry(entry);
-	if (entry % 1000 == 0)
+	//fReader.SetEntry(entry);
+	GetEntry(entry);
+	
+	if (entry % 1 == 0)
 		cout << "Processing " << entry << endl;
 	double eventareas = 0;
 	for (int i = 0; i < pulsesODLG_->nPulses; i++)
@@ -128,7 +132,7 @@ Bool_t MDC3Analysis::Process(Long64_t entry)
 	}
 	if (eventareas > 1 && pulsesODLG_->maxCoincidence > 0)
 	{
-		h_phdperpulse->Fill(eventareas);
+		//h_phdperpulse->Fill(eventareas);
 		for (int i = 0; i < pulsesODLG_->nPulses; i++)
 		{
 			double pasym = 2 * pulsesODLG_->areaFractionTime50_ns[i] - pulsesODLG_->areaFractionTime5_ns[i]
@@ -277,6 +281,7 @@ Bool_t MDC3Analysis::Process(Long64_t entry)
 			// h_timingVpeakamp[12]->Fill(pasym, pulsesODLG_->peakAmp[i], pulsesODLG_->pulseArea_phd[i] / eventareas);
 		}
 	}
+	++fNumberOfEvents;
 	return kTRUE;
 }
 
@@ -285,6 +290,7 @@ void MDC3Analysis::SlaveTerminate()
 	// The SlaveTerminate() function is called after all entries or objects
 	// have been processed. When running with PROOF SlaveTerminate() is called
 	// on each slave server.
+	std::cout<<fNumberOfEvents<<" Events analyzed"<<std::endl;
 }
 
 void MDC3Analysis::Terminate()

@@ -12,6 +12,7 @@
 #include <TFile.h>
 #include <TH1F.h>
 #include <TH2F.h>
+#include <TTree.h>
 #include <TROOT.h>
 #include <TSelector.h>
 #include <TTreeReader.h>
@@ -22,21 +23,7 @@
 #include <vector>
 
 // Headers needed by this particular selector
-#include "rqlib/RQ__EventHeader.h"
-
-#include "rqlib/RQ__DetectorPulses.h"
-
-#include "rqlib/RQ__ODPulses.h"
-
-#include "rqlib/RQ__SingleScatters.h"
-
-#include "rqlib/RQ__MultipleScatters.h"
-
-#include "rqlib/RQ__Kr83mScatters.h"
-
-#include "rqlib/RQ__OtherScatters.h"
-
-#include "rqlib/RQ__PileUpScatters.h"
+#include "rqlib/rqlibProjectHeaders.h"
 
 class MDC3Analysis : public TSelector
 {
@@ -44,6 +31,7 @@ public:
 	TTreeReader fReader; //! the tree reader
 	TTree* fChain = 0; //! pointer to the analyzed TTree or TChain
 	TString fOutFileName;
+	Int_t fNumberOfEvents = 0;
 
 	// Output histograms (OD only for now)
 	std::vector<std::string> histnames { "areaFractionTime1_ns", "areaFractionTime5_ns", "areaFractionTime10_ns",
@@ -94,15 +82,17 @@ public:
 
 	// TH2F* h_ass = 0;
 
+	RQ::ODPulses *pulsesODLG_=0;
+	RQ::EventHeader *eventHeader_=0;
 	// Readers to access the data (delete the ones you do not need).
-	TTreeReaderValue<RQ::EventHeader> eventHeader_ = { fReader, "eventHeader." };
+	//TTreeReaderValue<RQ::EventHeader> eventHeader_ = { fReader, "eventHeader." };
 	/*
 	TTreeReaderValue<RQ::DetectorPulses> pulsesTPCHG_ = { fReader, "pulsesTPCHG." };
 	TTreeReaderValue<RQ::DetectorPulses> pulsesTPCLG_ = { fReader, "pulsesTPCLG." };
 	TTreeReaderValue<RQ::DetectorPulses> pulsesSkin_ = { fReader, "pulsesSkin." };
 	*/
-	TTreeReaderValue<RQ::ODPulses> pulsesODHG_ = { fReader, "pulsesODHG." };
-	TTreeReaderValue<RQ::ODPulses> pulsesODLG_ = { fReader, "pulsesODLG." };
+	//TTreeReaderValue<RQ::ODPulses> pulsesODHG_ = { fReader, "pulsesODHG." };
+	//TTreeReaderValue<RQ::ODPulses> pulsesODLG_ = { fReader, "pulsesODLG." };
 	/*
 	        TTreeReaderValue<RQ::SingleScatters> singleScatters_ = { fReader, "singleScatters." };
 	    TTreeReaderValue<RQ::MultipleScatters> multipleScatters_ = { fReader, "multipleScatters." };
@@ -152,6 +142,20 @@ public:
 		fOutFileName = fileName;
 	}
 
+	void SetHistRanges(TTree* intree)
+	{
+		maxamp = intree->GetMaximum("pulsesODLG.peakAmp")+0.01;
+	maxarea = intree->GetMaximum("pulsesODLG.pulseArea_phd")+0.01;
+	maxstart = intree->GetMaximum("pulsesODLG.pulseStartTime_ns")+0.01;
+	std::cout<<"Max area="<<maxarea<<", max amp="<<maxamp<<", maxstart="<<maxstart<<std::endl;
+	for (int ij = 0; ij < histnames.size(); ij++)
+	{
+		std::string maxname="pulsesODLG."+histnames[ij];
+		histxlimsu[ij] = intree->GetMaximum(maxname.c_str())+0.01;
+		std::cout<<"Max "<<histnames[ij]<<"= "<<histxlimsu[ij]<<", ";
+	}
+	}
+
 	ClassDef(MDC3Analysis, 0);
 };
 
@@ -166,17 +170,12 @@ void MDC3Analysis::Init(TTree* tree)
 	// code, but the routine can be extended by the user if needed.
 	// Init() will be called many times when running on PROOF
 	// (once per file to be processed).
-	if (!tree)
-		return;
 	fChain = tree;
 	fReader.SetTree(tree);
-	maxamp = fChain->GetMaximum("pulsesODLG.peakAmp");
-	maxarea = fChain->GetMaximum("pulsesODLG.pulseArea_phd");
-	maxstart = fChain->GetMaximum("pulsesODLG.pulseStartTime_ns");
-	for (int ij = 0; ij < histnames.size(); ij++)
-	{
-		histxlimsu[ij] = fChain->GetMaximum(histnames[ij].c_str());
-	}
+	int nEvts=fReader.GetEntries(true);
+	std::cout<<nEvts<<" events in tree"<<std::endl;
+	fChain->SetBranchAddress("eventHeader.",&eventHeader_);
+	fChain->SetBranchAddress("pulsesODLG.",&pulsesODLG_);
 }
 
 Bool_t MDC3Analysis::Notify()
@@ -186,7 +185,14 @@ Bool_t MDC3Analysis::Notify()
 	// is started when using PROOF. It is normally not necessary to make changes
 	// to the generated code, but the routine can be extended by the
 	// user if needed. The return value is currently not used.
-
+	int readin=0;
+	for(int i=0;i<fReader.GetEntries(true);++i){
+	TTreeReader::EEntryStatus entstatus = fReader.SetEntry(i);
+	if(entstatus==TTreeReader::EEntryStatus::kEntryValid)
+		//std::cout<<"Unsuccessful access!!"<<std::endl;
+		readin++;
+	}
+	std::cout<<readin<<" events loaded in notify"<<std::endl;
 	return kTRUE;
 }
 
